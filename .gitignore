@@ -1,0 +1,7 @@
+*.pyc
+*.DS_Store
+*~
+.idea
+django_aloha_editor.egg-info
+settings.py
+_bat

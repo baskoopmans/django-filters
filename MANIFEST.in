@@ -1,0 +1,6 @@
+include AUTHORS
+include LICENSE
+include README.rst
+recursive-include filters/static *
+recursive-include filters/templates *
+global-include *.po *.mo
