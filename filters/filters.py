@@ -11,10 +11,10 @@ from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import resolve, reverse, reverse_lazy
 from django.http import Http404
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext as _
 from django.template import RequestContext
 from django.template.loader import render_to_string
-from django.db.models import Count
+from django.db.models import Count, Min, Max
 
 from common.decorators import cached
 from common.helpers import uniqify_list, construct_object
@@ -95,7 +95,7 @@ class FilterSet(object):
         return _("Search all %s" % self.get_subject_plural())
 
     def get_title(self):
-        selected_choices = self.filter_mapper['selection'].get_selected_choices() + self.filter_mapper['brand'].get_selected_choices() + self.filter_mapper['category'].get_selected_choices()
+        selected_choices = self.filter_mapper['brand'].get_selected_choices() + self.filter_mapper['category'].get_selected_choices()
         if len(selected_choices) == 1:
             return selected_choices[0].meta_title
         elif len(selected_choices) > 1:
@@ -143,13 +143,16 @@ class Choice(object):
         super(Choice, self).__init__(**kwargs)
 
     def __unicode__(self):
-        return u"%s" % self.obj
+        return u"%s" % str(self.obj)
 
     def __str__(self):
         return str(self.obj)
 
     def __eq__(self, other):
-        return self.obj == other.obj
+        if hasattr(other, 'obj'):
+            return self.obj == other.obj
+        else:
+            return self.obj == other
 
 
 class BaseFilter(object):
@@ -331,7 +334,7 @@ class ChoicesFilter(BaseFilter):
 
     @cached
     def _get_count(self):
-        return self.queryset.values_list(self.model_field, flat=True)
+        return [str(x) for x in self.queryset.values_list(self.model_field, flat=True)]
 
     def get_count(self, choice):
         return list(self._get_count()).count(str(choice))
@@ -349,8 +352,9 @@ class ChoicesFilter(BaseFilter):
     def get_choices(self):
         choices = [Choice(x) for x in self.choices()]
         for choice in choices:
-            choice.selected = True if str(choice) in self._get_selected_choices() else False
             try:
+                choice.selected = True if str(choice) in self._get_selected_choices() else False
+
                 # Get all the path kwargs and change te kwarg for this choice
 
                 # create filter url
@@ -407,8 +411,9 @@ class ChoiceFilter(ChoicesFilter):
     def get_choices(self):
         choices = [Choice(x) for x in self.choices()]
         for choice in choices:
-            choice.selected = True if str(choice) in self._get_selected_choices() else False
             try:
+                choice.selected = True if str(choice) in self._get_selected_choices() else False
+
                 # Get all the path kwargs and change te kwarg for this choice
 
                 # create filter url
@@ -435,10 +440,16 @@ class ChoiceFilter(ChoicesFilter):
                 choice.rel_nofollow = True if not choice.count else False
         return choices
 
+    def get_selected_choice(self):
+        try:
+            return self.get_selected_choices()[0]
+        except:
+            return None
+
     @cached
     def get_results(self):
         try:
-            return self.queryset.filter(**{'%s__exact' % self.model_field: self._get_selected_choices()[0]})
+            return self.queryset.filter(**{'%s__exact' % self.model_field: self.get_selected_choice().obj})
         except Exception, e:
             #TODO: log this somewhere appropiate (and uncomment the above line)
             print "** EXCEPTION ** " + str(e)
