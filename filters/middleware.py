@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.conf.urls.defaults import include, patterns
 
-from common.helpers import construct_object
+from djcommon.helpers import construct_object
 
 
 class ProductListFiltersMiddleware(object):

@@ -2,12 +2,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-filters',
-    version=__import__('common').__version__,
+    version=__import__('filters').__version__,
     description='A filterset and filters.',
     long_description=open('README.rst').read(),
     # Get more strings from http://www.python.org/pypi?:action=list_classifiers
     author='Bas Koopmans',
-    author_email='e-mail@baskoopmans.nl',
+    author_email='django@baskoopmans.nl',
     url='http://github.com/baskoopmans/django-filters/',
     download_url='http://github.com/baskoopmans/django-filters/downloads',
     license='BSD',

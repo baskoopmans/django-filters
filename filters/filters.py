@@ -16,8 +16,8 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.db.models import Count, Min, Max
 
-from common.decorators import cached
-from common.helpers import uniqify_list, construct_object
+from djcommon.decorators import cached
+from djcommon.helpers import uniqify_list, construct_object
 
 import logging
 logger = logging.getLogger(__name__)
