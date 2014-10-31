@@ -71,9 +71,15 @@ class FilterSet(object):
 
     @property
     def meta_noindex(self):
+        """
+        Check if the filter combination can be indexed.
+
+        If an active filter is set no_index = True
+        If request has GET parameters
+        """
         test = [x.meta_noindex for x in self.active_filters]
         logger.info('META_NOINDEX %s' % test)
-        return True if True in test else False
+        return True if True in test or self.request.GET else False
 
     @property
     def rel_canonical(self):
@@ -264,7 +270,7 @@ class BaseFilter(object):
                 kwargs = dict(resolve(self.request.path).kwargs.copy())
             elif self.type == 'get':
                 kwargs = self.request.GET.dict()
-            return kwargs
+            return self.clean_kwargs(kwargs)
         except Exception, e:
             raise Exception(e)
 
@@ -276,7 +282,7 @@ class BaseFilter(object):
             if not value:
                 # if the value is empty remove the key
                 del kwargs[key]
-            if self.value_delimiter:
+            if getattr(self, 'value_delimiter', None):
                 # cleanup the value by removing doubles and sorting the values
                 value_list = value.split(self.value_delimiter)
                 value_list = uniqify_list(value_list)
@@ -496,7 +502,7 @@ class ModelChoicesFilter(BaseFilter):
 
     @cached
     def choices(self):
-        return self.model.objects.visible()[:]
+        return self.model.on_site.all()[:]
 
     def _get_selected_choices(self):
         return [x for x in self.choices() if x.slug in self.cleaned_value()]
@@ -538,7 +544,7 @@ class ModelChoicesFilter(BaseFilter):
                 raise Exception(e)
             if self.count:
                 choice.count = self.get_count(choice)
-                choice.rel_nofollow = True if not choice.count else False
+                choice.rel_nofollow = True if not choice.count else choice.rel_nofollow
         return choices
 
     @cached
@@ -589,7 +595,7 @@ class ModelChoiceFilter(ModelChoicesFilter):
                 raise Exception(e)
             if self.count:
                 choice.count = self.get_count(choice)
-                choice.rel_nofollow = True if not choice.count else False
+                choice.rel_nofollow = True if not choice.count else choice.rel_nofollow
         return choices
 
     @cached
