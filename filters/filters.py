@@ -1,18 +1,13 @@
 # coding: utf-8
 
 import urllib
-import importlib
 import math
-import operator
-import copy
 
-from django.conf import settings
-from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import resolve, reverse, reverse_lazy
+from django.core.urlresolvers import resolve, reverse_lazy
 from django.http import Http404
 from django.utils.translation import ugettext as _
-from django.template import RequestContext
+from django.template import RequestContext, Context
 from django.template.loader import render_to_string
 from django.db.models import Count, Min, Max
 
@@ -21,6 +16,7 @@ from djcommon.helpers import uniqify_list, construct_object
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 class FilterSet(object):
     def __init__(self, queryset, request, view, filters=[]):
@@ -247,7 +243,7 @@ class BaseFilter(object):
         """
         Render the template
         """
-        return render_to_string(self.template, context_instance=RequestContext(self.request, {'filter': self }))
+        return render_to_string(self.template, context_instance=Context({'filter': self }))
 
     def reverse_path(self, kwargs):
         """
@@ -397,7 +393,6 @@ class ChoicesFilter(BaseFilter):
             return self.queryset.filter(**{'%s__in' % self.model_field: self._get_selected_choices()})
         except Exception, e:
             #TODO: log this somewhere appropiate (and uncomment the above line)
-            print "** EXCEPTION ** " + str(e)
             return self.queryset.none()
 
 class ChoiceFilter(ChoicesFilter):
@@ -458,7 +453,6 @@ class ChoiceFilter(ChoicesFilter):
             return self.queryset.filter(**{'%s__exact' % self.model_field: self.get_selected_choice().obj})
         except Exception, e:
             #TODO: log this somewhere appropiate (and uncomment the above line)
-            print "** EXCEPTION ** " + str(e)
             return self.queryset.none()
 
 
@@ -553,7 +547,6 @@ class ModelChoicesFilter(BaseFilter):
             return self.queryset.filter(**{'%s__in' % self.model_field: self._get_selected_choices()})
         except Exception, e:
             #TODO: log this somewhere appropiate (and uncomment the above line)
-            print "** EXCEPTION ** " + str(e)
             return self.queryset.none()
 
 
@@ -604,7 +597,6 @@ class ModelChoiceFilter(ModelChoicesFilter):
             return self.queryset.filter(**{'%s__exact' % self.model_field: self._get_selected_choices()[0]})
         except Exception, e:
             #TODO: log this somewhere appropiate (and uncomment the above line)
-            print "** EXCEPTION ** " + str(e)
             return self.queryset.none()
 
 
@@ -620,10 +612,7 @@ class RangeFilter(BaseFilter):
         """
         Check if this filter should be visible for the current queryset
         """
-        # Not supported by MySQL!
-        #return self.queryset.distinct(self.model_field).count() > 1
-        result = self.queryset.aggregate(Count(self.model_field, distinct=True))
-        return result.values()[0] > 2
+        return self.value_max() - self.value_min()
 
     @cached
     def range_min(self):
