@@ -345,7 +345,8 @@ class ChoicesFilter(BaseFilter):
         raise NotImplementedError
 
     def _get_selected_choices(self):
-        return [x for x in self.choices() if x in self.cleaned_value()]
+        cv = self.cleaned_value()
+        return [x for x in self.choices() if x in cv]
 
     def get_selected_choices(self):
         return [x for x in self.get_choices() if x.selected]
@@ -485,7 +486,10 @@ class ModelChoicesFilter(BaseFilter):
         """
         Return the splitted (by value delimitter) if there is an value else return empty list
         """
-        return self.get_value().split(self.value_delimiter) if self.get_value() else []
+        value = self.get_value()
+        value = value.split()
+        return value
+       # return value.split(self.value_delimiter) if self.get_value() else []
 
     @cached
     def _get_count(self):
@@ -499,7 +503,8 @@ class ModelChoicesFilter(BaseFilter):
         return self.model.on_site.all()[:]
 
     def _get_selected_choices(self):
-        return [x for x in self.choices() if x.slug in self.cleaned_value()]
+        cv = self.cleaned_value()
+        return [x for x in self.choices() if x.slug in cv]
 
 
     def get_selected_choices(self):
@@ -615,20 +620,15 @@ class RangeFilter(BaseFilter):
         return self.value_max() - self.value_min()
 
     @cached
-    def range_min(self):
-        try:
-            result = self.queryset.aggregate(Min(self.model_field)).values()[0]
-            return int(math.floor(float(result))) if result else 0
-        except Exception, e:
-            raise Exception(e)
+    def get_min_max(self):
+        min_max = self.queryset.aggregate(Min(self.model_field), Max(self.model_field)).values()
+        return min_max
 
-    @cached
+    def range_min(self):
+        return self.get_min_max()[0]
+
     def range_max(self):
-        try:
-            result = self.queryset.aggregate(Max(self.model_field)).values()[0]
-            return int(math.ceil(float(result))) if result else 0
-        except Exception, e:
-            raise Exception(e)
+        return self.get_min_max()[1]
 
     def cleaned_value(self):
         value = self.get_value()
