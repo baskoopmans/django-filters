@@ -164,7 +164,7 @@ class BaseFilter(object):
         if self.type == 'get':
             return True
         else:
-            return any([x.rel_nofollow for x in self.get_selected_choices()])
+            return self.value_delimiter in self.request.path
 
     def render(self):
         """Render the filter with html template"""
@@ -309,8 +309,6 @@ class ChoicesFilter(BaseFilter):
             choice.rel_nofollow = any(x in urllib.unquote(choice.filter_path) for x in [self.value_delimiter, '?'])
             if self.count:
                 choice.count = self.get_count(choice)
-                if not choice.count:
-                    choice.rel_nofollow = True
         return choices
 
 
